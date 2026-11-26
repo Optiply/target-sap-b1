@@ -260,8 +260,8 @@ class BuyOrders(SapSink):
         return result[0], result[1], {"is_updated": True} if method == "PATCH" else result[2]
 
 
-class ExportOptiplyBOID(SapSink):
-    name = "ExportOptiplyBOID"
+class UpdateBuyOrders(SapSink):
+    name = "UpdateBuyOrders"
     endpoint = "PurchaseOrders"
 
     def preprocess_record(self, record, context):
