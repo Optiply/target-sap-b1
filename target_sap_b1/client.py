@@ -35,9 +35,14 @@ class SapSink(HotglueSink):
         self._session_expires_at = 0
 
     def get_previous_state(self):
+        current = self._target._latest_state or {}
         previous = super().get_previous_state()
         if previous:
-            # Adopt the SDK's filtered copy, not its stale pre-filter constructor copy.
+            # The SDK filters all streams; preserve state belonging to other sinks.
+            for field in ("bookmarks", "summary"):
+                for stream, value in current.get(field, {}).items():
+                    if stream != self.name:
+                        previous.setdefault(field, {})[stream] = value
             self._state = previous
         return previous
 

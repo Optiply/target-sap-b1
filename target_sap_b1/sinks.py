@@ -258,3 +258,24 @@ class BuyOrders(SapSink):
             self.read_json(response)
         result = self._confirm(entry, record, body)
         return result[0], result[1], {"is_updated": True} if method == "PATCH" else result[2]
+
+
+class ExportOptiplyBOID(SapSink):
+    name = "ExportOptiplyBOID"
+    endpoint = "PurchaseOrders"
+
+    def preprocess_record(self, record, context):
+        return {
+            "U_OPT_PO_HeaderID": _text(record.get("id"), "id", allow_integer=True),
+            "remoteId": BuyOrders._entry(record.get("remoteId")),
+        }
+
+    def upsert_record(self, record, context):
+        response = self.request_api(
+            "PATCH",
+            endpoint=f"PurchaseOrders({record['remoteId']})",
+            request_data={"U_OPT_PO_HeaderID": record["U_OPT_PO_HeaderID"]},
+        )
+        if response.content:
+            self.read_json(response)
+        return record["remoteId"], True, {"is_updated": True}
