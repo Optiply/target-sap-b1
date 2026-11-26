@@ -14,13 +14,13 @@ from hotglue_singer_sdk.exceptions import ConfigValidationError, FatalAPIError
 from hotglue_singer_sdk.helpers.capabilities import AlertingLevel
 from hotglue_singer_sdk.target_sdk.target import TargetHotglue
 
-from target_sap_b1.sinks import BuyOrders, source_identity
+from target_sap_b1.sinks import BuyOrders, UpdateBuyOrders, _text, source_identity
 
 
 class TargetSAPB1(TargetHotglue):
     name = "target-sap-b1"
     alerting_level = AlertingLevel.WARNING
-    SINK_TYPES = [BuyOrders]
+    SINK_TYPES = [BuyOrders, UpdateBuyOrders]
     MAX_PARALLELISM = 1
     config_jsonschema = th.PropertiesList(
         th.Property("api_url", th.StringType, required=True),
@@ -69,11 +69,15 @@ class TargetSAPB1(TargetHotglue):
         }
 
     def get_sink_class(self, stream_name):
-        if stream_name != "BuyOrders":
-            raise FatalAPIError(f"Unsupported Singer stream: {stream_name}")
-        return BuyOrders
+        for sink in self.SINK_TYPES:
+            if stream_name == sink.name:
+                return sink
+        raise FatalAPIError(f"Unsupported Singer stream: {stream_name}")
 
     def get_record_id(self, sink_name, record, relation_fields=None):
+        if sink_name == UpdateBuyOrders.name:
+            record["externalId"] = _text(record.get("id"), "id", allow_integer=True)
+            return record
         record["externalId"] = source_identity(record)
         record.pop("id")
         return super().get_record_id(sink_name, record, relation_fields)
@@ -120,8 +124,12 @@ class TargetSAPB1(TargetHotglue):
         # Timed SDK drains must not acknowledge an input stream that can still fail.
         if not self._input_complete:
             return
-        bookmarks = state.get("bookmarks", {}).get("BuyOrders", [])
-        if state.get("sap_pending_creates") or any(not row.get("success") for row in bookmarks):
+        bookmarks = state.get("bookmarks", {})
+        if state.get("sap_pending_creates") or any(
+            not row.get("success")
+            for sink in self.SINK_TYPES
+            for row in bookmarks.get(sink.name, [])
+        ):
             raise FatalAPIError("Unresolved SAP orders prevent successful STATE acknowledgement")
         super()._write_state_message(state)
 

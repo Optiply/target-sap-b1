@@ -130,13 +130,33 @@ weekend-shift configuration are not supported.
 - GETs have at most three attempts with jitter and `Retry-After` capped at
   30 seconds. Connection/read timeouts are 5/30 seconds. Authentication and
   permanent 4xx errors fail without retry. POST/PATCH are never blindly retried.
-- Every write requires full document readback. A durable pending-create marker
-  prevents another POST after an ambiguous response, even after restart or an
-  empty lookup. Definitive rejection clears a just-created marker; unresolved
+- `BuyOrders` writes require full document readback. A durable pending-create
+  marker prevents another POST after an ambiguous response, even after restart or
+  an empty lookup. Definitive rejection clears a just-created marker; unresolved
   creates require SAP reconciliation before an operator approves any state repair.
   Never discard unresolved state merely to retry; losing it defeats duplicate safety.
 - Prior delivery hashes are invalidated durably before PATCH, so returning to a
   previous quantity/total after an update or interrupted write is reconciled.
+
+### Exporting Optiply buy-order IDs to SAP
+
+`UpdateBuyOrders` is a separate Singer stream with `id` (Optiply buy-order ID)
+and `remoteId` (SAP purchase-order `DocEntry`, a positive integer or numeric string).
+It sends `PATCH PurchaseOrders(<DocEntry>)` with only `U_OPT_PO_HeaderID` set to
+the Optiply ID. It never creates orders, writes lines, performs lookups, or tries
+the purchase-invoice endpoint. Prefixed IDs and `DocEntry|DocNum` composites are
+not valid target inputs; the ETL preserves IDs unchanged and the import owns
+their correctness.
+
+Missing or malformed identifiers fail the job before a SAP request. The sink
+accepts successful 2xx responses, including 202 Accepted and empty 204 responses,
+without polling or readback. Non-empty bodies must be valid JSON objects without
+an SAP error. HTTP failures and ambiguous network failures emit no success state
+and are not retried within the run. Retain the input and state for replay.
+The header-only assignment is idempotent. Successful identical replays use the SDK's stream-specific
+hashes. The `BuyOrders` and `UpdateBuyOrders` bookmarks remain separate, even for
+the same Optiply ID.
+
 
 ### Integration Prerequisites
 
