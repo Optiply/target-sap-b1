@@ -21,7 +21,7 @@ from target_sap_b1.sinks import BuyOrders
 from target_sap_b1.target import TargetSAPB1
 
 
-STREAM = "ExportOptiplyBOID"
+STREAM = "UpdateBuyOrders"
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -232,7 +232,7 @@ def test_patch_identity_does_not_hydrate_ids_from_any_sdk_snapshot(harness, monk
     assert harness.patches()[0][1] == "PurchaseOrders(5001)"
 
 
-@pytest.mark.parametrize("stream", ["patchBuyOrder", "boExportOptiplyId", "Products"])
+@pytest.mark.parametrize("stream", ["ExportOptiplyBOID", "patchBuyOrder", "boExportOptiplyId", "Products"])
 def test_unknown_or_previous_stream_name_is_rejected(harness, stream, capsys):
     with pytest.raises(FatalAPIError):
         harness.run([{"id": "41", "remoteId": "5001"}], stream=stream)

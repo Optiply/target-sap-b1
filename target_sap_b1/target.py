@@ -14,13 +14,13 @@ from hotglue_singer_sdk.exceptions import ConfigValidationError, FatalAPIError
 from hotglue_singer_sdk.helpers.capabilities import AlertingLevel
 from hotglue_singer_sdk.target_sdk.target import TargetHotglue
 
-from target_sap_b1.sinks import BuyOrders, ExportOptiplyBOID, _text, source_identity
+from target_sap_b1.sinks import BuyOrders, UpdateBuyOrders, _text, source_identity
 
 
 class TargetSAPB1(TargetHotglue):
     name = "target-sap-b1"
     alerting_level = AlertingLevel.WARNING
-    SINK_TYPES = [BuyOrders, ExportOptiplyBOID]
+    SINK_TYPES = [BuyOrders, UpdateBuyOrders]
     MAX_PARALLELISM = 1
     config_jsonschema = th.PropertiesList(
         th.Property("api_url", th.StringType, required=True),
@@ -75,7 +75,7 @@ class TargetSAPB1(TargetHotglue):
         raise FatalAPIError(f"Unsupported Singer stream: {stream_name}")
 
     def get_record_id(self, sink_name, record, relation_fields=None):
-        if sink_name == ExportOptiplyBOID.name:
+        if sink_name == UpdateBuyOrders.name:
             record["externalId"] = _text(record.get("id"), "id", allow_integer=True)
             return record
         record["externalId"] = source_identity(record)

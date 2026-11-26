@@ -140,7 +140,7 @@ weekend-shift configuration are not supported.
 
 ### Exporting Optiply buy-order IDs to SAP
 
-`ExportOptiplyBOID` is a separate Singer stream with `id` (Optiply buy-order ID)
+`UpdateBuyOrders` is a separate Singer stream with `id` (Optiply buy-order ID)
 and `remoteId` (SAP purchase-order `DocEntry`, a positive integer or numeric string).
 It sends `PATCH PurchaseOrders(<DocEntry>)` with only `U_OPT_PO_HeaderID` set to
 the Optiply ID. It never creates orders, writes lines, performs lookups, or tries
@@ -154,7 +154,7 @@ without polling or readback. Non-empty bodies must be valid JSON objects without
 an SAP error. HTTP failures and ambiguous network failures emit no success state
 and are not retried within the run. Retain the input and state for replay.
 The header-only assignment is idempotent. Successful identical replays use the SDK's stream-specific
-hashes. The `BuyOrders` and `ExportOptiplyBOID` bookmarks remain separate, even for
+hashes. The `BuyOrders` and `UpdateBuyOrders` bookmarks remain separate, even for
 the same Optiply ID.
 
 
