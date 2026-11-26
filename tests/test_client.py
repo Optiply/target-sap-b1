@@ -83,11 +83,31 @@ def test_retry_after_cannot_block_unboundedly(sink):
     assert sink._retry_delay(RetriableAPIError("rate limited", response), 0) == 30
 
 
-@pytest.mark.parametrize("api_url", ["http://localhost/b1s/v2/", "https://user:pass@localhost/b1s/v2/", "https://localhost/b1s/v1/", "https://localhost/b1s/v2/?token=bad"])
-def test_unsafe_service_root_rejected_before_authentication(config, sap, api_url):
+@pytest.mark.parametrize("api_url,expected_root", [
+    ("http://localhost/b1s/v2/", None),
+    ("https://synthetic-user:synthetic-password@localhost/b1s/v2/", None),
+    ("https://localhost/b1s/v2/?token=bad", None),
+    ("https://localhost", "https://localhost/b1s/v1/"),
+    ("https://localhost/b1s/", "https://localhost/b1s/v1/"),
+    ("https://localhost/b1s/v1/", "https://localhost/b1s/v1/"),
+    ("https://localhost/b1s/v2/", "https://localhost/b1s/v2/"),
+])
+def test_service_root_validation_and_normalization(config, sap, api_url, expected_root):
     config["api_url"] = api_url
-    with pytest.raises(ConfigValidationError):
-        TargetSAPB1(config=config)
+    if expected_root is None:
+        with pytest.raises(ConfigValidationError):
+            TargetSAPB1(config=config)
+    else:
+        target = TargetSAPB1(config=config)
+        try:
+            sink = target.get_sink_class("BuyOrders")(
+                target, "BuyOrders", {"type": "object", "properties": {}}, []
+            )
+            assert sink.url("Login") == f"{expected_root}Login"
+            assert sink.url("PurchaseOrders(5001)") == f"{expected_root}PurchaseOrders(5001)"
+        finally:
+            target._shutdown_requested.set()
+            target.signal_listener_thread.join(timeout=1)
     assert not sap.requests
 
 
