@@ -28,7 +28,7 @@ Keep the existing state file and `state_path`; persisted state keys are unchange
 
 | Setting | Required | Description |
 | --- | --- | --- |
-| `api_url` | Yes | HTTPS SAP Service Layer URL ending in `/b1s/v2/`. |
+| `api_url` | Yes | HTTPS SAP Service Layer host or root. Host-only values use `/b1s/v1/`; explicit Service Layer roots retain their version. |
 | `company_db` | Yes | SAP company database used for Login and all order operations. |
 | `username` | Yes | SAP Service Layer username. |
 | `password` | Yes | SAP Service Layer password. |
@@ -37,7 +37,7 @@ Keep the existing state file and `state_path`; persisted state keys are unchange
 The connection fields match `tap-sap-b1`: `api_url`, `company_db`, `username` and
 `password`. Rename `base_url` to `api_url` in older target configurations; the old
 configuration key is no longer supported. Keep the existing target state file.
-Unlike the tap's default `/b1s/v1`, this target still requires `/b1s/v2/`.
+Host-only URLs use the tap's default `/b1s/v1/`; an explicit `/b1s/v2/` root is also supported.
 
 ### Example Configuration
 

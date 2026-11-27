@@ -49,9 +49,8 @@ class TargetSAPB1(TargetHotglue):
             or url.password is not None
             or url.query
             or url.fragment
-            or not url.path.rstrip("/").endswith("/b1s/v2")
         ):
-            raise ConfigValidationError("api_url must be an HTTPS Service Layer root ending /b1s/v2/")
+            raise ConfigValidationError("api_url must be an absolute HTTPS URL without credentials, query, or fragment")
         if os.environ.get("STREAMING_JOB") == "True":
             raise ConfigValidationError("target-sap-b1 supports scheduled exports, not streaming jobs")
         return result

@@ -48,7 +48,12 @@ class SapSink(HotglueSink):
 
     @property
     def base_url(self):
-        return self.config["api_url"].rstrip("/") + "/"
+        base = self.config["api_url"].rstrip("/")
+        root = re.search(r"/b1s(?:/(v\d+))?$", base, re.IGNORECASE)
+        if root:
+            version = (root.group(1) or "v1").lower()
+            return f"{base[:root.start()]}/b1s/{version}/"
+        return f"{base}/b1s/v1/"
 
     @property
     def http_headers(self):
